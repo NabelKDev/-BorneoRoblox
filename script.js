@@ -9,6 +9,14 @@ let appData = {
   total_pendapatan: 0
 };
 
+// ✅ CONFIG dideklarasikan di sini
+const CONFIG = {
+  whatsappNumber: '6281549764588',
+  robuxMin: 50,
+  robuxMax: 10000
+};
+
+
 // Load data from memory on page load
 document.addEventListener('DOMContentLoaded', function() {
   loadAppData();
@@ -279,6 +287,11 @@ function selectPaket(robuxAmount) {
 
 // Order handling
 function handleOrder(e) {
+  
+const CONFIG = {
+  whatsappNumber: '6281549764588'
+};
+
   e.preventDefault();
 
   if (!currentUser) {
