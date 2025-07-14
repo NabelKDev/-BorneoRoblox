@@ -333,9 +333,9 @@ function handleOrder(e) {
   generatePaketCards();
   loadUserHistory();
   
-  // Create WhatsApp message
-  const message = `*PEMESANAN ROBUX BARU*
-  
+// Create WhatsApp message
+const message = `*PEMESANAN ROBUX BARU*
+
 ID Pesanan: ${orderId}
 Nama: ${currentUser.username}
 Username Roblox: ${username}
@@ -345,11 +345,17 @@ Metode Pembayaran: ${metode}
 Tanggal: ${order.tanggal}
 
 Silakan lakukan pembayaran dan kirim bukti transfer.`;
-  
-  const whatsappURL = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(message)}`;
-  window.open(whatsappURL, '_blank');
-  
-  showNotification('Pesanan berhasil dikirim ke WhatsApp!', 'success');
+
+// Nomor WhatsApp dalam format internasional (Indonesia = 62)
+const CONFIG = {
+  whatsappNumber: '6281549764588'
+};
+
+const whatsappURL = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(message)}`;
+window.open(whatsappURL, '_blank');
+
+showNotification('Pesanan berhasil dikirim ke WhatsApp!', 'success');
+
   
   // Reset form
   document.getElementById('orderForm').reset();
