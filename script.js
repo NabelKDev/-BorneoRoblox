@@ -346,13 +346,9 @@ Tanggal: ${order.tanggal}
 
 Silakan lakukan pembayaran dan kirim bukti transfer.`;
 
-// Nomor WhatsApp dalam format internasional (Indonesia = 62)
-const CONFIG = {
-  whatsappNumber: '6281549764588'
-};
-
-const whatsappURL = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(message)}`;
+const whatsappURL = `https://wa.me/6281549764588?text=${encodeURIComponent(message)}`;
 window.open(whatsappURL, '_blank');
+
 
 showNotification('Pesanan berhasil dikirim ke WhatsApp!', 'success');
 
