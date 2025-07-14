@@ -3,8 +3,7 @@
 // Global variables
 let currentUser = null;
 let appData = {
-  stok: 10000,
-  harga_per_robux: 1.5,
+  harga_per_robux: 120,
   pesanan: 0,
   robux_terjual: 0,
   total_pendapatan: 0
@@ -212,19 +211,14 @@ function saveAppData() {
 
 // Update display functions
 function updateDisplay() {
-  updateStokDisplay();
   updateAdminStats();
   updatePriceExample();
 }
 
-function updateStokDisplay() {
-  const stokDisplay = document.getElementById('stok-display');
-  stokDisplay.innerHTML = `<span class="text-2xl font-bold text-green-400">${appData.stok.toLocaleString()}</span> Robux`;
-}
+
 
 function updateAdminStats() {
   if (document.getElementById('currentStock')) {
-    document.getElementById('currentStock').value = appData.stok;
     document.getElementById('totalOrders').textContent = appData.pesanan.toLocaleString();
     document.getElementById('totalRobuxSold').textContent = appData.robux_terjual.toLocaleString();
     document.getElementById('totalRevenue').textContent = `Rp ${appData.total_pendapatan.toLocaleString()}`;
@@ -301,10 +295,7 @@ function handleOrder(e) {
     return;
   }
   
-  if (jumlahRobux > appData.stok) {
-    showNotification('Stok tidak mencukupi!', 'error');
-    return;
-  }
+
   
   const hargaTotal = jumlahRobux * appData.harga_per_robux;
   const orderId = Date.now();
@@ -332,7 +323,6 @@ function handleOrder(e) {
   }
   
   // Update app data
-  appData.stok -= jumlahRobux;
   appData.pesanan += 1;
   appData.robux_terjual += jumlahRobux;
   appData.total_pendapatan += hargaTotal;
@@ -394,27 +384,7 @@ function loadUserHistory() {
   `).join('');
 }
 
-// Admin functions
-function updateStock() {
-  if (!currentUser || currentUser.role !== 'admin') {
-    showNotification('Akses ditolak!', 'error');
-    return;
-  }
-  
-  const newStock = parseInt(document.getElementById('newStock').value);
-  if (isNaN(newStock) || newStock < 0) {
-    showNotification('Stok harus berupa angka positif!', 'error');
-    return;
-  }
-  
-  appData.stok = newStock;
-  saveAppData();
-  updateDisplay();
-  generatePaketCards();
-  
-  showNotification('Stok berhasil diperbarui!', 'success');
-  document.getElementById('newStock').value = '';
-}
+
 
 function updatePrice() {
   if (!currentUser || currentUser.role !== 'admin') {
