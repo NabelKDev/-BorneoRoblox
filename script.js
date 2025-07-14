@@ -280,27 +280,24 @@ function selectPaket(robuxAmount) {
 // Order handling
 function handleOrder(e) {
   e.preventDefault();
-  
+
   if (!currentUser) {
     showNotification('Silakan login terlebih dahulu!', 'error');
     return;
   }
-  
+
   const username = document.getElementById('username').value;
   const jumlahRobux = parseInt(document.getElementById('jumlahRobux').value);
   const metode = document.getElementById('metode').value;
-  
+
   if (!username || !jumlahRobux || jumlahRobux < CONFIG.robuxMin || jumlahRobux > CONFIG.robuxMax) {
     showNotification('Harap isi semua field dengan benar!', 'error');
     return;
   }
-  
 
-  
   const hargaTotal = jumlahRobux * appData.harga_per_robux;
   const orderId = Date.now();
-  
-  // Create order
+
   const order = {
     id: orderId,
     userId: currentUser.id,
@@ -312,29 +309,24 @@ function handleOrder(e) {
     status: 'pending',
     tanggal: new Date().toLocaleString('id-ID')
   };
-  
-  // Save to user orders
+
   const users = JSON.parse(localStorage.getItem('users') || '[]');
   const userIndex = users.findIndex(u => u.id === currentUser.id);
   if (userIndex !== -1) {
-    users[userIndex].orders = users[userIndex].orders || [];
     users[userIndex].orders.push(order);
     localStorage.setItem('users', JSON.stringify(users));
   }
-  
-  // Update app data
+
   appData.pesanan += 1;
   appData.robux_terjual += jumlahRobux;
   appData.total_pendapatan += hargaTotal;
   saveAppData();
-  
-  // Update displays
+
   updateDisplay();
   generatePaketCards();
   loadUserHistory();
-  
-// Create WhatsApp message
-const message = `*PEMESANAN ROBUX BARU*
+
+  const message = `*PEMESANAN ROBUX BARU*
 
 ID Pesanan: ${orderId}
 Nama: ${currentUser.username}
@@ -346,18 +338,17 @@ Tanggal: ${order.tanggal}
 
 Silakan lakukan pembayaran dan kirim bukti transfer.`;
 
-const whatsappURL = `https://wa.me/6281549764588?text=${encodeURIComponent(message)}`;
-window.open(whatsappURL, '_blank');
+  // 👇 Ini bagian penting
+  const whatsappURL = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(message)}`;
+  window.open(whatsappURL, '_blank');
 
+  showNotification('Pesanan berhasil dikirim ke WhatsApp!', 'success');
 
-showNotification('Pesanan berhasil dikirim ke WhatsApp!', 'success');
-
-  
-  // Reset form
   document.getElementById('orderForm').reset();
   document.getElementById('jumlahRobux').value = 100;
   updateHargaTotal();
 }
+
 
 // Load user history
 function loadUserHistory() {
