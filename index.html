@@ -1,233 +1,448 @@
-<!DOCTYPE html>
-<html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BorneoRoblox | Robux Premium</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <!-- Header -->
-    <header class="bg-primary text-white">
-      <div class="max-w-7xl mx-auto px-4 py-5 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <img src="BORNEO.png" alt="BorneoRoblox" class="w-10 h-10 rounded-full" />
-          <h1 class="text-xl sm:text-2xl font-bold">BorneoRoblox</h1>
-        </div>
-        <nav class="flex items-center space-x-6 text-sm font-medium">
-          <a href="#paket" class="hover:text-yellow-300">Paket</a>
-          <a href="#form" class="hover:text-yellow-300">Pesan</a>
-          <a href="#riwayat" class="hover:text-yellow-300">Riwayat</a>
-          <a href="#bantuan" class="hover:text-yellow-300">Bantuan</a>
-          <div id="userMenu" class="flex items-center space-x-4">
-            <button id="loginBtn" onclick="showLoginModal()" class="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">Login</button>
-            <button id="registerBtn" onclick="showRegisterModal()" class="border border-yellow-600 text-yellow-600 px-4 py-2 rounded hover:bg-yellow-600 hover:text-white">Daftar</button>
-            <div id="userInfo" class="hidden items-center space-x-4">
-              <span id="welcomeText" class="text-yellow-300"></span>
-              <button onclick="logout()" class="text-red-400 hover:text-red-300">Logout</button>
-            </div>
-          </div>
-        </nav>
-      </div>
-    </header>
+// script.js - Perbaikan Error
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal">
-      <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
-        <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Login</h3>
-        <form id="loginForm">
-          <div class="mb-4">
-            <label class="block mb-2 font-medium text-gray-700">Username</label>
-            <input type="text" id="loginUsername" required class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div class="mb-6">
-            <label class="block mb-2 font-medium text-gray-700">Password</label>
-            <input type="password" id="loginPassword" required class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Login</button>
-        </form>
-        <button onclick="closeModal('loginModal')" class="w-full mt-4 text-gray-500 hover:text-gray-700">Batal</button>
+// Global variables
+let currentUser = null;
+let appData = {
+  harga_per_robux: 120,
+  pesanan: 0,
+  robux_terjual: 0,
+  total_pendapatan: 0
+};
+
+// Load data from memory on page load
+document.addEventListener('DOMContentLoaded', function() {
+  loadAppData();
+  updateDisplay();
+  generatePaketCards();
+  checkUserLogin();
+  
+  // Event listeners untuk form
+  document.getElementById('loginForm').addEventListener('submit', handleLogin);
+  document.getElementById('registerForm').addEventListener('submit', handleRegister);
+  document.getElementById('orderForm').addEventListener('submit', handleOrder);
+  
+  // Update harga saat jumlah robux berubah
+  document.getElementById('jumlahRobux').addEventListener('input', updateHargaTotal);
+  
+  // Update price example when price changes
+  document.getElementById('pricePerRobux').addEventListener('input', updatePriceExample);
+});
+
+// Modal functions
+function showLoginModal() {
+  document.getElementById("loginModal").classList.add("active");
+}
+
+function showRegisterModal() {
+  document.getElementById("registerModal").classList.add("active");
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove("active");
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach(modal => {
+    if (event.target === modal) {
+      modal.classList.remove('active');
+    }
+  });
+});
+
+// User authentication functions
+function handleLogin(e) {
+  e.preventDefault();
+  
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!username || !password) {
+    showNotification('Username dan password harus diisi!', 'error');
+    return;
+  }
+
+  // Ambil data user dari localStorage
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const userIndex = users.findIndex(u => u.username === username && u.password === password);
+  const user = users[userIndex];
+
+if (user) {
+  currentUser = user;
+
+  // Deteksi admin berdasarkan username
+  if (user.username.toLowerCase() === "nabil") {
+    currentUser.role = "admin";
+  }
+
+  saveCurrentUser(); // Tambahkan agar tersimpan
+  updateUserUI();
+  closeModal('loginModal');
+  showNotification('Login berhasil!', 'success');
+
+  // Tampilkan panel admin jika role = admin
+  if (currentUser.role === 'admin') {
+    document.getElementById('adminPanel').classList.add('active');
+  }
+}
+ else {
+    showNotification('Username atau password salah!', 'error');
+  }
+}
+
+
+function handleRegister(e) {
+  e.preventDefault();
+  
+  const username = document.getElementById('regUsername').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  
+  if (!username || !email || !password) {
+    showNotification('Semua field harus diisi!', 'error');
+    return;
+  }
+  
+  // Simulate registration
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  
+  if (users.find(u => u.username === username)) {
+    showNotification('Username sudah digunakan!', 'error');
+    return;
+  }
+  
+  if (users.find(u => u.email === email)) {
+    showNotification('Email sudah digunakan!', 'error');
+    return;
+  }
+  
+  const newUser = {
+    id: Date.now(),
+    username,
+    email,
+    password,
+    role: username === 'admin' ? 'admin' : 'user',
+    orders: []
+  };
+  
+  users.push(newUser);
+  localStorage.setItem('users', JSON.stringify(users));
+  
+  showNotification('Registrasi berhasil! Silakan login.', 'success');
+  closeModal('registerModal');
+  
+  // Clear form
+  document.getElementById('registerForm').reset();
+}
+
+function logout() {
+  currentUser = null;
+  updateUserUI();
+  document.getElementById('adminPanel').classList.remove('active');
+  showNotification('Logout berhasil!', 'info');
+}
+
+function updateUserUI() {
+  const loginBtn = document.getElementById('loginBtn');
+  const registerBtn = document.getElementById('registerBtn');
+  const userInfo = document.getElementById('userInfo');
+  const welcomeText = document.getElementById('welcomeText');
+  const loginRequired = document.getElementById('loginRequired');
+  const orderForm = document.getElementById('orderForm');
+  
+  if (currentUser) {
+    loginBtn.style.display = 'none';
+    registerBtn.style.display = 'none';
+    userInfo.classList.remove('hidden');
+    userInfo.classList.add('flex');
+    welcomeText.textContent = `Halo, ${currentUser.username}!`;
+    
+    // Show order form
+    loginRequired.classList.add('hidden');
+    orderForm.classList.remove('hidden');
+    
+    // Load user history
+    loadUserHistory();
+  } else {
+    loginBtn.style.display = 'block';
+    registerBtn.style.display = 'block';
+    userInfo.classList.add('hidden');
+    userInfo.classList.remove('flex');
+    
+    // Hide order form
+    loginRequired.classList.remove('hidden');
+    orderForm.classList.add('hidden');
+    
+    // Clear history
+    document.getElementById('historyList').innerHTML = '<p class="text-gray-400 italic">Belum ada pemesanan</p>';
+  }
+}
+
+function checkUserLogin() {
+  const savedUser = localStorage.getItem('currentUser');
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+
+    // Set admin jika username adalah "nabil"
+    if (currentUser.username.toLowerCase() === 'nabil') {
+      currentUser.role = 'admin';
+    }
+
+    updateUserUI();
+
+    if (currentUser.role === 'admin') {
+      document.getElementById('adminPanel').classList.add('active');
+    }
+  }
+}
+
+// Load and save app data
+function loadAppData() {
+  const savedData = localStorage.getItem('appData');
+  if (savedData) {
+    appData = JSON.parse(savedData);
+  }
+}
+
+function saveAppData() {
+  localStorage.setItem('appData', JSON.stringify(appData));
+}
+
+// Update display functions
+function updateDisplay() {
+  updateAdminStats();
+  updatePriceExample();
+}
+
+
+
+function updateAdminStats() {
+  if (document.getElementById('currentStock')) {
+    document.getElementById('totalOrders').textContent = appData.pesanan.toLocaleString();
+    document.getElementById('totalRobuxSold').textContent = appData.robux_terjual.toLocaleString();
+    document.getElementById('totalRevenue').textContent = `Rp ${appData.total_pendapatan.toLocaleString()}`;
+    document.getElementById('pricePerRobux').value = appData.harga_per_robux;
+  }
+}
+
+function updatePriceExample() {
+  const priceExample = document.getElementById('priceExample');
+  if (priceExample) {
+    const examplePrice = (100 * appData.harga_per_robux).toLocaleString();
+    priceExample.value = examplePrice;
+  }
+}
+
+function updateHargaTotal() {
+  const jumlahRobux = parseInt(document.getElementById('jumlahRobux').value) || 0;
+  const hargaTotal = jumlahRobux * appData.harga_per_robux;
+  document.getElementById('hargaTotal').value = `Rp ${hargaTotal.toLocaleString()}`;
+}
+
+// Generate paket cards
+function generatePaketCards() {
+  const container = document.getElementById('paketContainer');
+  const pakets = [
+    { robux: 50, color: 'green' },
+    { robux: 100, color: 'blue' },
+    { robux: 500, color: 'purple' },
+    { robux: 1000, color: 'orange' }
+  ];
+  
+  container.innerHTML = '';
+  
+  pakets.forEach(paket => {
+    const harga = paket.robux * appData.harga_per_robux;
+    const card = document.createElement('div');
+    card.className = `paket-card ${paket.color}`;
+    card.innerHTML = `
+      <h4>${paket.robux} Robux</h4>
+      <div class="price">Rp ${harga.toLocaleString()}</div>
+      <button onclick="selectPaket(${paket.robux})">Pilih Paket</button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function selectPaket(robuxAmount) {
+  if (!currentUser) {
+    showNotification('Silakan login terlebih dahulu!', 'error');
+    showLoginModal();
+    return;
+  }
+  
+  document.getElementById('jumlahRobux').value = robuxAmount;
+  updateHargaTotal();
+  document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Order handling
+function handleOrder(e) {
+  e.preventDefault();
+  
+  if (!currentUser) {
+    showNotification('Silakan login terlebih dahulu!', 'error');
+    return;
+  }
+  
+  const username = document.getElementById('username').value;
+  const jumlahRobux = parseInt(document.getElementById('jumlahRobux').value);
+  const metode = document.getElementById('metode').value;
+  
+  if (!username || !jumlahRobux || jumlahRobux < CONFIG.robuxMin || jumlahRobux > CONFIG.robuxMax) {
+    showNotification('Harap isi semua field dengan benar!', 'error');
+    return;
+  }
+  
+
+  
+  const hargaTotal = jumlahRobux * appData.harga_per_robux;
+  const orderId = Date.now();
+  
+  // Create order
+  const order = {
+    id: orderId,
+    userId: currentUser.id,
+    username: currentUser.username,
+    robloxUsername: username,
+    jumlahRobux,
+    hargaTotal,
+    metode,
+    status: 'pending',
+    tanggal: new Date().toLocaleString('id-ID')
+  };
+  
+  // Save to user orders
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const userIndex = users.findIndex(u => u.id === currentUser.id);
+  if (userIndex !== -1) {
+    users[userIndex].orders = users[userIndex].orders || [];
+    users[userIndex].orders.push(order);
+    localStorage.setItem('users', JSON.stringify(users));
+  }
+  
+  // Update app data
+  appData.pesanan += 1;
+  appData.robux_terjual += jumlahRobux;
+  appData.total_pendapatan += hargaTotal;
+  saveAppData();
+  
+  // Update displays
+  updateDisplay();
+  generatePaketCards();
+  loadUserHistory();
+  
+// Create WhatsApp message
+const message = `*PEMESANAN ROBUX BARU*
+
+ID Pesanan: ${orderId}
+Nama: ${currentUser.username}
+Username Roblox: ${username}
+Jumlah Robux: ${jumlahRobux.toLocaleString()}
+Harga Total: Rp ${hargaTotal.toLocaleString()}
+Metode Pembayaran: ${metode}
+Tanggal: ${order.tanggal}
+
+Silakan lakukan pembayaran dan kirim bukti transfer.`;
+
+const whatsappURL = `https://wa.me/6281549764588?text=${encodeURIComponent(message)}`;
+window.open(whatsappURL, '_blank');
+
+
+showNotification('Pesanan berhasil dikirim ke WhatsApp!', 'success');
+
+  
+  // Reset form
+  document.getElementById('orderForm').reset();
+  document.getElementById('jumlahRobux').value = 100;
+  updateHargaTotal();
+}
+
+// Load user history
+function loadUserHistory() {
+  if (!currentUser) return;
+  
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const user = users.find(u => u.id === currentUser.id);
+  const historyList = document.getElementById('historyList');
+  
+  if (!user || !user.orders || user.orders.length === 0) {
+    historyList.innerHTML = '<p class="text-gray-400 italic">Belum ada pemesanan</p>';
+    return;
+  }
+  
+  historyList.innerHTML = user.orders.map(order => `
+    <div class="history-card">
+      <h4>Pesanan #${order.id}</h4>
+      <div class="history-info">
+        <p><strong>Username Roblox:</strong> ${order.robloxUsername}</p>
+        <p><strong>Jumlah Robux:</strong> ${order.jumlahRobux.toLocaleString()}</p>
+        <p><strong>Harga Total:</strong> Rp ${order.hargaTotal.toLocaleString()}</p>
+        <p><strong>Status:</strong> ${order.status}</p>
+        <p><strong>Tanggal:</strong> ${order.tanggal}</p>
       </div>
     </div>
+  `).join('');
+}
 
-    <!-- Register Modal -->
-    <div id="registerModal" class="modal">
-      <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
-        <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Daftar Akun</h3>
-        <form id="registerForm">
-          <div class="mb-4">
-            <label class="block mb-2 font-medium text-gray-700">Username</label>
-            <input type="text" id="regUsername" required class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div class="mb-4">
-            <label class="block mb-2 font-medium text-gray-700">Email</label>
-            <input type="email" id="regEmail" required class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div class="mb-6">
-            <label class="block mb-2 font-medium text-gray-700">Password</label>
-            <input type="password" id="regPassword" required class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Daftar</button>
-        </form>
-        <button onclick="closeModal('registerModal')" class="w-full mt-4 text-gray-500 hover:text-gray-700">Batal</button>
-      </div>
-    </div>
 
-    <!-- Hero Section -->
-    <section class="hero-section text-white py-20 text-center px-4">
-      <h2 class="text-4xl font-bold mb-4">Top Up Robux Premium 💎</h2>
-      <p class="text-lg mb-2">Tersedia 50 hingga 10.000 Robux</p>
-      <p class="text-sm italic mb-6">⚠️ Proses Robux dapat memakan waktu 5–7 hari kerja</p>
-      <a href="#form" class="inline-block bg-white text-gray-800 font-semibold px-6 py-3 rounded-full shadow hover:bg-gray-100 transition-colors">Top Up Sekarang</a>
-    </section>
 
-    <!-- Admin Panel -->
-    <section id="adminPanel" class="admin-panel py-10 px-6 bg-red-50 border-l-4 border-red-500">
-      <div class="max-w-4xl mx-auto">
-        <h3 class="text-2xl font-bold text-red-700 mb-6 text-center">🔐 Admin Panel</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <!-- Update Stock -->
-          <div class="bg-white p-6 rounded-lg shadow">
-            <h4 class="text-lg font-semibold mb-4 text-gray-800">Update Stok Robux</h4>
-            <div class="mb-4">
-              <label class="block mb-2 font-medium text-gray-700">Stok Saat Ini</label>
-              <input type="number" id="currentStock" readonly class="w-full border px-4 py-2 rounded-lg bg-gray-100" />
-            </div>
-            <div class="mb-4">
-              <label class="block mb-2 font-medium text-gray-700">Stok Baru</label>
-              <input type="number" id="newStock" min="0" class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
-            </div>
-            <button onclick="updateStock()" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700">Update Stok</button>
-          </div>
+function updatePrice() {
+  if (!currentUser || currentUser.role !== 'admin') {
+    showNotification('Akses ditolak!', 'error');
+    return;
+  }
+  
+  const newPrice = parseFloat(document.getElementById('pricePerRobux').value);
+  if (isNaN(newPrice) || newPrice <= 0) {
+    showNotification('Harga harus berupa angka positif!', 'error');
+    return;
+  }
+  
+  appData.harga_per_robux = newPrice;
+  saveAppData();
+  updateDisplay();
+  generatePaketCards();
+  updateHargaTotal();
+  
+  showNotification('Harga berhasil diperbarui!', 'success');
+}
 
-          <!-- Update Price -->
-          <div class="bg-white p-6 rounded-lg shadow">
-            <h4 class="text-lg font-semibold mb-4 text-gray-800">Update Harga</h4>
-            <div class="mb-4">
-              <label class="block mb-2 font-medium text-gray-700">Harga Per Robux (Rp)</label>
-              <input type="number" id="pricePerRobux" min="1" step="0.01" class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
-            </div>
-            <div class="mb-4">
-              <label class="block mb-2 font-medium text-gray-700">Contoh: 100 Robux = Rp</label>
-              <input type="text" id="priceExample" readonly class="w-full border px-4 py-2 rounded-lg bg-gray-100" />
-            </div>
-            <button onclick="updatePrice()" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Update Harga</button>
-          </div>
+function resetStats() {
+  if (!currentUser || currentUser.role !== 'admin') {
+    showNotification('Akses ditolak!', 'error');
+    return;
+  }
+  
+  if (confirm('Apakah Anda yakin ingin mereset semua statistik?')) {
+    appData.pesanan = 0;
+    appData.robux_terjual = 0;
+    appData.total_pendapatan = 0;
+    saveAppData();
+    updateDisplay();
+    
+    showNotification('Statistik berhasil direset!', 'success');
+  }
+}
 
-          <!-- Order Statistics -->
-          <div class="bg-white p-6 rounded-lg shadow">
-            <h4 class="text-lg font-semibold mb-4 text-gray-800">Statistik Pesanan</h4>
-            <div class="space-y-3">
-              <div class="flex justify-between">
-                <span class="text-gray-600">Total Pesanan:</span>
-                <span id="totalOrders" class="font-bold text-gray-800">0</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Robux Terjual:</span>
-                <span id="totalRobuxSold" class="font-bold text-gray-800">0</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Total Pendapatan:</span>
-                <span id="totalRevenue" class="font-bold text-gray-800">Rp 0</span>
-              </div>
-            </div>
-            <button onclick="resetStats()" class="w-full mt-4 bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700">Reset Statistik</button>
-          </div>
-        </div>
-      </div>
-    </section>
+// Notification system
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 4000);
+}
 
-    <!-- Tutorial Gamepass -->
-    <section class="py-10 px-6 bg-gray-800 text-center">
-      <h3 class="text-2xl font-bold text-white mb-4">Tutorial Membuat Gamepass</h3>
-      <p class="mb-4 text-gray-300">Ikuti langkah mudah melalui video TikTok berikut:</p>
-      <a href="https://vt.tiktok.com/ZSBbF6YYD/" target="_blank" class="text-blue-400 underline hover:text-blue-300">Tonton di TikTok &rarr;</a>
-    </section>
-
-    <!-- Paket Robux -->
-    <section id="paket" class="py-16 px-6 max-w-6xl mx-auto">
-      <h3 class="text-3xl font-bold text-center mb-12 text-white">Pilih Paket Robux</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="paketContainer">
-        <!-- Paket akan diisi oleh JavaScript -->
-      </div>
-    </section>
-
-    <!-- Formulir Pemesanan -->
-    <section id="form" class="bg-gray-800 py-16 px-6">
-      <div class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-        <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Formulir Pemesanan</h3>
-        <div id="loginRequired" class="text-center py-8">
-          <p class="text-gray-600 mb-4">Silakan login terlebih dahulu untuk melakukan pemesanan</p>
-          <button onclick="showLoginModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Login</button>
-        </div>
-        <form id="orderForm" class="hidden">
-          <div class="mb-4">
-            <label class="block mb-2 font-medium text-gray-700">Username Roblox</label>
-            <input type="text" id="username" required placeholder="Masukkan username Roblox" class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div class="mb-4">
-            <label class="block mb-2 font-medium text-gray-700">Jumlah Robux</label>
-            <input type="number" id="jumlahRobux" min="50" max="10000" step="1" value="100" class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div class="mb-4">
-            <label class="block mb-2 font-medium text-gray-700">Harga Total</label>
-            <input type="text" id="hargaTotal" readonly class="w-full border px-4 py-2 rounded-lg bg-gray-100" />
-          </div>
-          <div class="mb-4">
-            <label class="block mb-2 font-medium text-gray-700">Metode Pembayaran</label>
-            <select id="metode" class="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="QRIS">QRIS</option>
-              <option value="Dana">Dana</option>
-            </select>
-          </div>
-          <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-colors">
-            Kirim ke WhatsApp
-          </button>
-        </form>
-      </div>
-    </section>
-
-    <!-- Riwayat Pemesanan -->
-    <section id="riwayat" class="py-12 px-6 bg-gray-700">
-      <div class="max-w-2xl mx-auto">
-        <h3 class="text-xl font-bold mb-4 text-white">Riwayat Pemesanan Anda</h3>
-        <div id="historyList" class="text-sm text-gray-300">
-          <p class="text-gray-400 italic">Belum ada pemesanan</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Bantuan & Footer -->
-    <footer id="bantuan" class="bg-gray-900 text-white py-12">
-      <div class="max-w-6xl mx-auto text-center">
-        <h4 class="text-xl font-semibold mb-4">Bantuan & Ikuti Kami</h4>
-        <div class="flex justify-center gap-6 mb-4">
-          <a href="https://wa.me/6281549764588" target="_blank" class="flex items-center gap-2 hover:text-green-400 transition-colors">
-            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.89 3.297"/>
-            </svg>
-            WhatsApp
-          </a>
-          <a href="https://tiktok.com/@nnabil_r" target="_blank" class="flex items-center gap-2 hover:text-pink-400 transition-colors">
-            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
-            </svg>
-            TikTok
-          </a>
-          <a href="https://instagram.com/nnabil_r" target="_blank" class="flex items-center gap-2 hover:text-pink-400 transition-colors">
-            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-            </svg>
-            Instagram
-          </a>
-        </div>
-        <p class="text-sm text-gray-400">&copy; 2025 BorneoRoblox. All rights reserved.</p>
-      </div>
-    </footer>
-
-    <script src="config.js"></script>
-    <script src="script.js"></script>
-  </body>
-</html>
+function saveCurrentUser() {
+  if (currentUser) {
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  } else {
+    localStorage.removeItem('currentUser');
+  }
+}
